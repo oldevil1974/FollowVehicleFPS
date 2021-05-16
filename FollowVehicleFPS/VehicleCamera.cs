@@ -4,22 +4,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityStandardAssets.ImageEffects;
+
 
 namespace FollowVehicleFPS
 {
     class VehicleCamera : MonoBehaviour
     {
         public bool following = false;
-        private ushort followingVehicleId;
+        private ushort followingVehicleId = 0;
         private Camera camera;
         private VehicleManager vehicleMgr;
+        private DepthOfField effect;
 
         void Awake()
         {
             camera = GetComponent<Camera>();
+            //camera.fieldOfView = 1.0f;
             vehicleMgr = VehicleManager.instance;
-        }
-        void Start()
+
+            CameraController cameraController = GetComponent<CameraController>();
+            effect = cameraController.GetComponent<DepthOfField>();
+    }
+    void Start()
         {
             Debug.Log("VehicleCamera Start");
         }
@@ -33,9 +40,26 @@ namespace FollowVehicleFPS
                 }
                 else
                 {
-                    ushort vehicleid = GetRandomVehicle();
-                    if (vehicleid != 0 )
-                        StartFollowing(vehicleid);
+                    GetNextVehicle();
+                    Debug.Log("ywq" + followingVehicleId);
+                    if (followingVehicleId != 0 )
+                        StartFollowing();
+                }
+            }
+            else if (Input.GetKeyDown(KeyCode.Period))
+            {
+                if (following)
+                {
+                    GetNextVehicle();
+                    Debug.Log("ywq" + followingVehicleId);
+                }
+            }
+            else if (Input.GetKeyDown(KeyCode.Comma))
+            {
+                if (following)
+                {
+                    GetPreVehicle();
+                    Debug.Log("ywq" + followingVehicleId);
                 }
             }
         }
@@ -47,24 +71,28 @@ namespace FollowVehicleFPS
                 Vector3 pos;
                 Quaternion oritation;
                 vehicle.GetSmoothPosition(followingVehicleId, out pos, out oritation);
-                camera.transform.position = pos;
+                camera.transform.position = pos + Vector3.up * 3.0f;
                 camera.transform.rotation = oritation;
+
+                if(effect)
+                    effect.enabled = false;
+
             }
         }
 
-        public void StartFollowing(ushort vehicleid) {
+        public void StartFollowing() {
             following = true;
-            followingVehicleId = vehicleid;
-            Debug.Log("StartFollowing " + vehicleid);
+            Debug.Log("StartFollowing");
         }
         public void StopFollowing() {
             following = false;
+            followingVehicleId = 0;
             Debug.Log("StopFollowing ");
         }
 
-        private ushort GetRandomVehicle()
+        private void GetNextVehicle()
         {
-            for(ushort i = 0; i < vehicleMgr.m_vehicleCount - 1; i++)
+            for(ushort i = (ushort)(followingVehicleId + 1); i < vehicleMgr.m_vehicleCount; i++)
             {
                 Vehicle vehicle = vehicleMgr.m_vehicles.m_buffer[i];
                 if ((vehicle.m_flags & (Vehicle.Flags.Created | Vehicle.Flags.Deleted))!= Vehicle.Flags.Created)
@@ -75,9 +103,26 @@ namespace FollowVehicleFPS
                 {
                     continue;
                 }
-                return i;
+                followingVehicleId = i;
+                return;
             }
-            return 0;
+        }
+        private void GetPreVehicle()
+        {
+            for (ushort i = (ushort)(followingVehicleId - 1); i > 0; i--)
+            {
+                Vehicle vehicle = vehicleMgr.m_vehicles.m_buffer[i];
+                if ((vehicle.m_flags & (Vehicle.Flags.Created | Vehicle.Flags.Deleted)) != Vehicle.Flags.Created)
+                {
+                    continue;
+                }
+                if (vehicle.Info.m_vehicleAI is CarTrailerAI)
+                {
+                    continue;
+                }
+                followingVehicleId = i;
+                return;
+            }
         }
     }
 }
