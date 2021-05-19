@@ -17,6 +17,9 @@ namespace FollowVehicleFPS
         private VehicleManager vehicleMgr;
         private DepthOfField effect;
 
+        private Vector3 cameraRotateEulerAngle = Vector3.zero;
+        private Vector3 cameraOffsetLocalPos = Vector3.zero;
+
         void Awake()
         {
             camera = GetComponent<Camera>();
@@ -32,7 +35,7 @@ namespace FollowVehicleFPS
         }
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F10))
+            if (Input.GetKeyDown(KeyCode.F11))
             {
                 if (following)
                 {
@@ -40,10 +43,7 @@ namespace FollowVehicleFPS
                 }
                 else
                 {
-                    GetNextVehicle();
-                    Debug.Log("ywq" + followingVehicleId);
-                    if (followingVehicleId != 0 )
-                        StartFollowing();
+                    StartFollowing();
                 }
             }
             else if (Input.GetKeyDown(KeyCode.Period))
@@ -52,6 +52,7 @@ namespace FollowVehicleFPS
                 {
                     GetNextVehicle();
                     Debug.Log("ywq" + followingVehicleId);
+                    cameraOffsetLocalPos = Vector3.zero;
                 }
             }
             else if (Input.GetKeyDown(KeyCode.Comma))
@@ -60,8 +61,22 @@ namespace FollowVehicleFPS
                 {
                     GetPreVehicle();
                     Debug.Log("ywq" + followingVehicleId);
+                    cameraOffsetLocalPos = Vector3.zero;
                 }
             }
+
+            cameraRotateEulerAngle.x -= Input.GetAxis("Mouse Y");
+            cameraRotateEulerAngle.y += Input.GetAxis("Mouse X");
+
+            //使用局部坐标
+            if (Input.GetKey(KeyCode.A))
+                cameraOffsetLocalPos -= Vector3.right * 10 * Time.deltaTime;
+            if (Input.GetKey(KeyCode.D))
+                cameraOffsetLocalPos += Vector3.right * 10 * Time.deltaTime;
+            if (Input.GetKey(KeyCode.W))
+                cameraOffsetLocalPos += Vector3.forward * 10 * Time.deltaTime;
+            if (Input.GetKey(KeyCode.S))
+                cameraOffsetLocalPos -= Vector3.forward * 10 * Time.deltaTime;
         }
         void LateUpdate()
         {
@@ -71,22 +86,37 @@ namespace FollowVehicleFPS
                 Vector3 pos;
                 Quaternion oritation;
                 vehicle.GetSmoothPosition(followingVehicleId, out pos, out oritation);
+
+                //建立局部坐标系
                 camera.transform.position = pos + Vector3.up * 3.0f;
                 camera.transform.rotation = oritation;
 
-                if(effect)
+                //局部坐标转换到世界坐标
+                Vector3 cameraWorldOffsetPos = camera.transform.TransformPoint(cameraOffsetLocalPos);
+
+                camera.transform.position = cameraWorldOffsetPos;
+                camera.transform.Rotate(cameraRotateEulerAngle);
+
+
+                if (effect)
                     effect.enabled = false;
 
             }
         }
 
         public void StartFollowing() {
-            following = true;
-            Debug.Log("StartFollowing");
+            followingVehicleId = 0;
+            GetNextVehicle();
+            Debug.Log("ywq" + followingVehicleId);
+            if (followingVehicleId != 0)
+            {
+                following = true;
+                cameraOffsetLocalPos = Vector3.zero;
+                Debug.Log("StartFollowing");
+            }
         }
         public void StopFollowing() {
             following = false;
-            followingVehicleId = 0;
             Debug.Log("StopFollowing ");
         }
 
