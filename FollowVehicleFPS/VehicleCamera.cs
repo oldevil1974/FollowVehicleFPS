@@ -68,15 +68,21 @@ namespace FollowVehicleFPS
             cameraRotateEulerAngle.x -= Input.GetAxis("Mouse Y");
             cameraRotateEulerAngle.y += Input.GetAxis("Mouse X");
 
+            //局部坐标轴旋转
+            Quaternion orientation = Quaternion.identity;
+            orientation.eulerAngles = cameraRotateEulerAngle;
+            Vector3 forward = orientation * Vector3.forward;
+            Vector3 right = orientation * Vector3.right;
+
             //使用局部坐标
             if (Input.GetKey(KeyCode.A))
-                cameraOffsetLocalPos -= Vector3.right * 10 * Time.deltaTime;
+                cameraOffsetLocalPos -= right * 10 * Time.deltaTime;
             if (Input.GetKey(KeyCode.D))
-                cameraOffsetLocalPos += Vector3.right * 10 * Time.deltaTime;
+                cameraOffsetLocalPos += right * 10 * Time.deltaTime;
             if (Input.GetKey(KeyCode.W))
-                cameraOffsetLocalPos += Vector3.forward * 10 * Time.deltaTime;
+                cameraOffsetLocalPos += forward * 10 * Time.deltaTime;
             if (Input.GetKey(KeyCode.S))
-                cameraOffsetLocalPos -= Vector3.forward * 10 * Time.deltaTime;
+                cameraOffsetLocalPos -= forward * 10 * Time.deltaTime;
         }
         void LateUpdate()
         {
